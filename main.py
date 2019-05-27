@@ -112,28 +112,26 @@ def renew_flags():
     for team in current_game['teams']:
         Parallel(n_jobs=4, backend="threading")(delayed(updateflag)(team, servicename) for servicename in services)
 
+def update_defense_point(game, teamname, servicename):
+    if game['flags'][ teamname ][ servicename ]['stoled'] is False:
+        try:
+            # if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
+            #     if safe_str_cmp ( get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
+            # Save to database
+            mongodb.ctfgame.update_one({
+                "_id": current_game['_id'],
+                "teams": { "$elemMatch": { "name": teamname } }
+            },
+                { "$inc": { "teams.$.points.defense": 1 } }
+            )
+        except Exception as e:
+            logger.error("Exception raised on: {}".format(e))
+
 def defensepoint():
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1} )
     for teamname in game['flags']:
-        defense_point = 0
         team = get_team(teamname, 'name')
-        # Increase defense point if the flags wasn't stoled
-        for servicename in game['flags'][ teamname ]: # DA PARALLELIZZARE!!!
-            if game['flags'][ teamname ][ servicename ]['stoled'] is False:
-                try:
-                    # if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
-                    #     if safe_str_cmp ( get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
-                    defense_point += 1
-                except Exception as e:
-                    logger.error("Exception raised on: {}".format(e))
-        # Save to database
-        mongodb.ctfgame.update_one({
-            "_id": current_game['_id'],
-            "teams": { "$elemMatch": { "name": teamname } }
-        },
-            { "$inc": { "teams.$.points.defense": defense_point } }
-        )
-        logger.info("Assign +{} defense points to {} team!".format(defense_point, teamname))
+        Parallel(n_jobs=4, backend="threading")(delayed(update_defense_point)(game, teamname, servicename) for servicename in game['flags'][ teamname ])
 
 def get_team(value, field):
     for team in current_game['teams']:
