@@ -17,10 +17,10 @@ from flask_cors import CORS
 
 from joblib import Parallel, delayed
 
-from werkzeug.security import safe_str_cmp
-
 from pprint import pprint
 from getpass import getpass
+
+from utils import *
 
 app = Flask(__name__)
 CORS(app)
@@ -45,7 +45,7 @@ services = {
     }
 }
 
-SALT = bcrypt.gensalt(10)
+SALT = b"$2b$12$m76fLc4PgIfXfK0dUc0pCu"
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, o):
@@ -75,7 +75,7 @@ def get_flag(host, servicename, flag):
     ssh = SSHClient()
     ssh.load_system_host_keys()
     ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
-    stdin, stdout, stderr = ssh.exec_command("cat filename.txt")
+    stdin, stdout, stderr = ssh.exec_command("cat {}".format(service['flagpath']))
     flag = stdout.readlines()
     return flag
 
@@ -94,6 +94,7 @@ def service_is_up( host, service ):
 
 def updateflag(team, servicename):
     flag =  "CTF_" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) # Create the flag
+    print("{} {} {}".format(team['host']['ipaddress'], servicename, flag))
     put_flag(team['host'], servicename, flag) # Write flag to file
     mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
         "flags.{}.{}".format(team['name'], servicename) : {
@@ -102,6 +103,9 @@ def updateflag(team, servicename):
             "generate_at": datetime.datetime.now()
         }
     } })
+
+def safe_str_cmp(flag, hashed):
+    return bcrypt.hashpw(flag.encode('utf-8'), SALT) == hashed
 
 def routine():
     defensepoint() # Assign defense point if the service is up and the flag wans't stoled.
@@ -130,39 +134,44 @@ def update_defense_point(game, teamname, servicename):
 def defensepoint():
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1} )
     for teamname in game['flags']:
-        team = get_team(teamname, 'name')
+        team = get_team_byname(current_game['teams'], teamname)
         Parallel(n_jobs=4, backend="threading")(delayed(update_defense_point)(game, teamname, servicename) for servicename in game['flags'][ teamname ])
-
-def get_team(value, field):
-    for team in current_game['teams']:
-        if team[field] == value:
-            return team
 
 @app.route('/submitflag', methods=['POST'])
 def submitflag():
     json_data = request.get_json()
-    flagid = json_data['flagid']
-    team = get_team(request.remote_addr, 'host')
+    flag_stoled = json_data['flag']
+    servicename = json_data['servicename']
+    stoled_from = json_data['stoledfrom']
 
-    game = mongodb.find_one({"_id": current_game['_id']}, {"flags": 1} )
-    flags = game['flags']
-    if safe_str_cmp(json_data['flag'], flags['flagid']['flag']): # Flags match!
-            mongodb.update_one(
+    team_attack = get_team_byaddress(current_game['teams'], request.remote_addr)
+    print("Attacco", team_attack)
+    team_defense = get_team_byaddress(current_game['teams'], stoled_from)
+    print("Dfesa", team_defense)
+
+    game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1} )
+    dbflag = game['flags'][ team_defense['name'] ][ servicename ]
+    if dbflag['stoled'] is False:
+        if safe_str_cmp(flag_stoled, dbflag['flag'] ): # Flags match!
+            mongodb.ctfgame.update_one(
                 {
                     "_id": current_game['_id'],
-                    "teams": { "$elemMatch": { "name": team['name'], "host": team['host'] } }
+                    "teams": { "$elemMatch": { "name": team_attack['name'], "host": team_attack['host'] } }
                 },
                 { "$inc": { "teams.$.points.attack": 2, } }
             )
-            mongodb.update_one(
+            time.sleep(1)
+            mongodb.ctfgame.update_one(
                 {
                     "_id": current_game['_id'],
-                    "flags": { "$elemMatch": flags['flagid'] }
                 },
-                { "$set": { "flags.$.stoled": True, } }
+                { "$set": { "flags.{}.{}.stoled".format( team_defense['name'], servicename ): True, } }
             )
-            # Remove flagid and set new flag for corresponding service.
-    return Response(json.dumps( {"team": team} , cls=JSONEncoder), status=200, mimetype='application/json')
+            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "valid"}  , cls=JSONEncoder), status=200, mimetype='application/json')
+        else:
+            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "wrong"}  , cls=JSONEncoder), status=400, mimetype='application/json')
+    else:
+        return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "expired"} , cls=JSONEncoder), status=400, mimetype='application/json')
 
 if __name__ == '__main__':
     command = input("[0] Start new game\n[1] Restore from db\n")
