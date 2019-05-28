@@ -144,10 +144,12 @@ def submitflag():
     servicename = json_data['servicename']
     stoled_from = json_data['stoledfrom']
 
-    team_attack = get_team_byaddress(current_game['teams'], request.remote_addr)
+    team_attack = get_team_byaddress(current_game['teams'], request.remote_addr) # Non è il palio, aggiunta del TEAM X , Y
     print("Attacco", team_attack)
     team_defense = get_team_byaddress(current_game['teams'], stoled_from)
     print("Dfesa", team_defense)
+
+    # Team attacco != Team difesa
 
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1} )
     dbflag = game['flags'][ team_defense['name'] ][ servicename ]
