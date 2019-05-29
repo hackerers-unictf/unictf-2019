@@ -126,7 +126,7 @@ def update_defense_point(game, teamname, servicename):
     if game['flags'][ teamname ][ servicename ]['stoled'] is False:
         try:
             if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
-                if 1==1: # safe_str_cmp ( get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
+                if safe_str_cmp ( get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
                     # Save to database
                     mongodb.ctfgame.update_one({
                         "_id": current_game['_id'],
