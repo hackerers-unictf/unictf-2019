@@ -34,20 +34,9 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 mongodb = MongoClient( )[ "unict-ctf" ]
 current_game = None
-services = {
-    "cracckami": {
-        "port": 1234,
-        "flagpath": "/home/alessandro/cracckamiflag.txt"
-    },
-    "bellosei": {
-        "port": 3456,
-        "flagpath": "/home/alessandro/belloseiflag.txt"
-    },
-    "easybof": {
-        "port": 4567,
-        "flagpath": "/home/alessandro/Downloads/BOF_EASY/arinzaadm"
-    }
-}
+
+with open('services.json') as f:
+    services = json.load(f)
 
 SALT = b"$2b$12$m76fLc4PgIfXfK0dUc0pCu"
 

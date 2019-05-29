@@ -1,0 +1,14 @@
+{
+    "service_name1": {
+        "port": 1234,
+        "flagpath": "/home/../../flag.txt"
+    },
+    "service_name2": {
+        "port": 5678,
+        "flagpath": "/home/../../flag.txt"
+    },
+    "service_name3": {
+        "port": 1111,
+        "flagpath": "/home/../../flag.txt"
+    }
+}
