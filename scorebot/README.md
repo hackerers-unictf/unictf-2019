@@ -26,7 +26,7 @@
 
 ## how to submit flag
 Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with the following args:
-```json
+```javascript
 {
     "flag": "unictf{BC9QHE1n8rwqM2R0....sx8FgryGbt6}", /** Stoled flag **/
     "servicename": "service1", /** Name of the service hacked **/
@@ -37,7 +37,7 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
 
 
 ## database
-```json
+```javascript
 {
     "_id" : ObjectId("5cebfd9....7945d6d1"),
     "teams" : [
