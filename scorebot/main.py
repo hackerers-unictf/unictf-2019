@@ -42,6 +42,10 @@ services = {
     "bellosei": {
         "port": 3456,
         "flagpath": "/home/alessandro/belloseiflag.txt"
+    },
+    "easybof": {
+        "port": 4567,
+        "flagpath": "/home/alessandro/Downloads/BOF_EASY/arinzaadm"
     }
 }
 
@@ -93,7 +97,7 @@ def service_is_up( host, service ):
     return False
 
 def updateflag(team, servicename):
-    flag =  "CTF_" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) # Create the flag
+    flag =  "unictf{" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) + '}' # Create the flag
     print("{} {} {}".format(team['host']['ipaddress'], servicename, flag))
     put_flag(team['host'], servicename, flag) # Write flag to file
     mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
@@ -109,6 +113,7 @@ def safe_str_cmp(flag, hashed):
 
 def routine():
     defensepoint() # Assign defense point if the service is up and the flag wans't stoled.
+    time.sleep(10)
     renew_flags() # Set the new flag for each team and service
     threading.Timer(60, routine).start() # Call again after x seconds
 
@@ -117,22 +122,23 @@ def renew_flags():
         Parallel(n_jobs=4, backend="threading")(delayed(updateflag)(team, servicename) for servicename in services)
 
 def update_defense_point(game, teamname, servicename):
+    team = get_team_byname(game['teams'], teamname)
     if game['flags'][ teamname ][ servicename ]['stoled'] is False:
         try:
-            # if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
-            #     if safe_str_cmp ( get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
-            # Save to database
-            mongodb.ctfgame.update_one({
-                "_id": current_game['_id'],
-                "teams": { "$elemMatch": { "name": teamname } }
-            },
-                { "$inc": { "teams.$.points.defense": 1 } }
-            )
+            if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
+                if 1==1: # safe_str_cmp ( get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
+                    # Save to database
+                    mongodb.ctfgame.update_one({
+                        "_id": current_game['_id'],
+                        "teams": { "$elemMatch": { "name": teamname } }
+                    },
+                        { "$inc": { "teams.$.points.defense": 1 } }
+                    )
         except Exception as e:
             logger.error("Exception raised on: {}".format(e))
 
 def defensepoint():
-    game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1} )
+    game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1, "teams": 1} )
     for teamname in game['flags']:
         team = get_team_byname(current_game['teams'], teamname)
         Parallel(n_jobs=4, backend="threading")(delayed(update_defense_point)(game, teamname, servicename) for servicename in game['flags'][ teamname ])
@@ -140,16 +146,28 @@ def defensepoint():
 @app.route('/submitflag', methods=['POST'])
 def submitflag():
     json_data = request.get_json()
+
+    for field in [ 'flag' , 'teamname' , 'servicename' , 'stoledfrom' ]:
+        return Response(json.dumps( {"message": "Please enter a valid: {}".format(field)}), status=400, mimetype='application/json')
+
     flag_stoled = json_data['flag']
-    servicename = json_data['servicename']
-    stoled_from = json_data['stoledfrom']
+    teamname = json_data['teamname'].lower()
+    servicename = json_data['servicename'].lower()
+    stoled_from = json_data['stoledfrom'].lower()
 
-    team_attack = get_team_byaddress(current_game['teams'], request.remote_addr) # Non è il palio, aggiunta del TEAM X , Y
-    print("Attacco", team_attack)
+    team_attack = get_team_byaddress(current_game['teams'], teamname)
+    if team_attack is None:
+        return Response(json.dumps( {"message": "{} team not found/valid".format(teamname)}), status=400, mimetype='application/json')
+
     team_defense = get_team_byaddress(current_game['teams'], stoled_from)
-    print("Dfesa", team_defense)
+    if team_defense is None:
+        return Response(json.dumps( {"message": "{} team not found/valid".format(stoled_from)}), status=400, mimetype='application/json')
 
-    # Team attacco != Team difesa
+    if servicename not in services.keys():
+        return Response(json.dumps( {"message": "{} service found/valid".format(servicename)}), status=400, mimetype='application/json')
+
+    if team_attack['name'] == team_defense['name']:
+        return Response(json.dumps( {"message": "Attack and defense team cannot be the same"}), status=400, mimetype='application/json')
 
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1} )
     dbflag = game['flags'][ team_defense['name'] ][ servicename ]
@@ -169,11 +187,11 @@ def submitflag():
                 },
                 { "$set": { "flags.{}.{}.stoled".format( team_defense['name'], servicename ): True, } }
             )
-            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "valid"}  , cls=JSONEncoder), status=200, mimetype='application/json')
+            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "valid"}), status=200, mimetype='application/json')
         else:
-            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "wrong"}  , cls=JSONEncoder), status=400, mimetype='application/json')
+            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "wrong"}), status=400, mimetype='application/json')
     else:
-        return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "expired"} , cls=JSONEncoder), status=400, mimetype='application/json')
+        return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "expired"}), status=400, mimetype='application/json')
 
 if __name__ == '__main__':
     command = input("[0] Start new game\n[1] Restore from db\n")
