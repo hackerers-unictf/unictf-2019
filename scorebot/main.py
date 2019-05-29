@@ -140,7 +140,7 @@ def submitflag():
         return Response(json.dumps( {"message": "Please enter a valid: {}".format(field)}), status=400, mimetype='application/json')
 
     flag_stoled = json_data['flag']
-    teamname = json_data['teamname'].lower()
+    teamname = json_data['teamname']
     servicename = json_data['servicename'].lower()
     stoled_from = json_data['stoledfrom'].lower()
 
