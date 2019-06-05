@@ -88,7 +88,7 @@ def renew_flags():
         Parallel(n_jobs=4, backend="threading")(delayed(updateflag)(team, servicename) for servicename in services)
 
 def update_defense_point(game, teamname, servicename):
-    team = get_team_byname(game['teams'], teamname)
+    team = utils.get_team_byname(game['teams'], teamname)
     if game['flags'][ teamname ][ servicename ]['stoled'] is False:
         try:
             if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
@@ -100,64 +100,75 @@ def update_defense_point(game, teamname, servicename):
                     },
                         { "$inc": { "teams.$.points.defense": 1 } }
                     )
+                    utils.append_to_history(dbmongo, current_game['_id'], "{} , {} DEFENSE +1!".format( teamname.title(), servicename ) )
+                else:
+                    utils.append_to_history(dbmongo, current_game['_id'], "{} , {} FLAG NOT INTEGRITY".format( teamname.title(), servicename ) )
+            else:
+                utils.append_to_history(dbmongo, current_game['_id'], "{} , {} SERVICE DOWN!".format( teamname.title(), servicename ) )
         except Exception as e:
             logger.error("Exception raised on: {}".format(e))
 
 def defensepoint():
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1, "teams": 1} )
     for teamname in game['flags']:
-        team = get_team_byname(current_game['teams'], teamname)
+        team = utils.get_team_byname(current_game['teams'], teamname)
         Parallel(n_jobs=4, backend="threading")(delayed(update_defense_point)(game, teamname, servicename) for servicename in game['flags'][ teamname ])
 
 @app.route('/submitflag', methods=['POST'])
 def submitflag():
     json_data = request.get_json()
+    try:
+        for field in [ 'flag' , 'teamname' , 'servicename' , 'stoledfrom' ]:
+            return Response(json.dumps( {"message": "Please enter a valid: {}".format(field)}), status=400, mimetype='application/json')
 
-    for field in [ 'flag' , 'teamname' , 'servicename' , 'stoledfrom' ]:
-        return Response(json.dumps( {"message": "Please enter a valid: {}".format(field)}), status=400, mimetype='application/json')
+        flag_stoled = json_data['flag']
+        teamname = json_data['teamname']
+        servicename = json_data['servicename'].lower()
+        stoled_from = json_data['stoledfrom'].lower()
 
-    flag_stoled = json_data['flag']
-    teamname = json_data['teamname']
-    servicename = json_data['servicename'].lower()
-    stoled_from = json_data['stoledfrom'].lower()
+        team_attack = utils.get_team_byaddress(current_game['teams'], teamname)
+        if team_attack is None:
+            return Response(json.dumps( {"message": "{} team not found/valid".format(teamname)}), status=400, mimetype='application/json')
 
-    team_attack = get_team_byaddress(current_game['teams'], teamname)
-    if team_attack is None:
-        return Response(json.dumps( {"message": "{} team not found/valid".format(teamname)}), status=400, mimetype='application/json')
+        team_defense = utils.get_team_byaddress(current_game['teams'], stoled_from)
+        if team_defense is None:
+            return Response(json.dumps( {"message": "{} team not found/valid".format(stoled_from)}), status=400, mimetype='application/json')
 
-    team_defense = get_team_byaddress(current_game['teams'], stoled_from)
-    if team_defense is None:
-        return Response(json.dumps( {"message": "{} team not found/valid".format(stoled_from)}), status=400, mimetype='application/json')
+        if servicename not in services.keys():
+            return Response(json.dumps( {"message": "{} service found/valid".format(servicename)}), status=400, mimetype='application/json')
 
-    if servicename not in services.keys():
-        return Response(json.dumps( {"message": "{} service found/valid".format(servicename)}), status=400, mimetype='application/json')
+        if team_attack['name'] == team_defense['name']:
+            return Response(json.dumps( {"message": "Attack and defense team cannot be the same"}), status=400, mimetype='application/json')
 
-    if team_attack['name'] == team_defense['name']:
-        return Response(json.dumps( {"message": "Attack and defense team cannot be the same"}), status=400, mimetype='application/json')
-
-    game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1} )
-    dbflag = game['flags'][ team_defense['name'] ][ servicename ]
-    if dbflag['stoled'] is False:
-        if safe_str_cmp(flag_stoled, dbflag['flag'] ): # Flags match!
-            mongodb.ctfgame.update_one(
-                {
-                    "_id": current_game['_id'],
-                    "teams": { "$elemMatch": { "name": team_attack['name'], "host": team_attack['host'] } }
-                },
-                { "$inc": { "teams.$.points.attack": 2, } }
-            )
-            time.sleep(1)
-            mongodb.ctfgame.update_one(
-                {
-                    "_id": current_game['_id'],
-                },
-                { "$set": { "flags.{}.{}.stoled".format( team_defense['name'], servicename ): True, } }
-            )
-            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "valid"}), status=200, mimetype='application/json')
+        game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1} )
+        dbflag = game['flags'][ team_defense['name'] ][ servicename ]
+        if dbflag['stoled'] is False:
+            if safe_str_cmp(flag_stoled, dbflag['flag'] ): # Flags match!
+                mongodb.ctfgame.update_one(
+                    {
+                        "_id": current_game['_id'],
+                        "teams": { "$elemMatch": { "name": team_attack['name'], "host": team_attack['host'] } }
+                    },
+                    { "$inc": { "teams.$.points.attack": 2, } }
+                )
+                time.sleep(1)
+                mongodb.ctfgame.update_one(
+                    {
+                        "_id": current_game['_id'],
+                    },
+                    { "$set": { "flags.{}.{}.stoled".format( team_defense['name'], servicename ): True, } }
+                )
+                utils.append_to_history(dbmongo, current_game['_id'], "{} submit a VALID flag! ATTACK +2".format( team_attack['name'].title() ) )
+                return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "valid"}), status=200, mimetype='application/json')
+            else:
+                utils.append_to_history(dbmongo, current_game['_id'], "{} submit a WRONG flag!".format( team_attack['name'].title() ) )
+                return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "wrong"}), status=400, mimetype='application/json')
         else:
-            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "wrong"}), status=400, mimetype='application/json')
-    else:
-        return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "expired"}), status=400, mimetype='application/json')
+            utils.append_to_history(dbmongo, current_game['_id'], "{} submit a EXPIRED flag!".format( team_attack['name'].title() ) )
+            return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "expired"}), status=400, mimetype='application/json')
+    except Exception as e:
+        logger.error("Exception raised with the following args: {}. Exception: {}".format(json_data, e))
+        return Response(json.dumps( {"message": "Scorebot Exception"}), status=500, mimetype='application/json')
 
 if __name__ == '__main__':
     command = input("[0] Start new game\n[1] Restore from db\n")

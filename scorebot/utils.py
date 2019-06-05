@@ -1,3 +1,4 @@
+from datetime import datetime
 from paramiko import SSHClient
 # from scp import SCPClient
 
@@ -40,3 +41,10 @@ def get_team_byaddress(teams, ipaddress):
         if team['host']['ipaddress'] == ipaddress:
             return team
     return None
+
+def append_to_history(mongodb, _id, message):
+    mongodb.ctfgame.update_one({
+        "_id": _id,
+    },
+        { "$push": { "history": "{} - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")  , message) } }
+    )
