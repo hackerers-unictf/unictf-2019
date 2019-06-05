@@ -24,6 +24,10 @@
 -
 -
 
+## setup ssh pub key
+1.  ```ssh-keygen -t rsa -b 2048 -v```
+2.  ``` ssh-copy-id -i ~/my-certificate.pub username@ip```
+
 ## how to submit flag
 Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with the following args:
 ```json
@@ -45,8 +49,7 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
             "name" : "team1-power", /** Lower case suggested for team name**/
             "host" : {
                 "ipaddress" : "192.168.x.x",
-                "username" : "ssh_username",
-                "password" : "ssh_password" /** Not encrypted **/
+                "sshkeypath": "../../idrsa.pub
             },
             "points" : {
                 "attack" : 10,
@@ -57,8 +60,7 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
             "name" : "team2-strong",
             "host" : {
                 "ipaddress" : "192.168.x.x",
-                "username" : "ssh_username",
-                "password" : "ssh_password" /** Not encrypted **/
+                "sshkeypath": "../../idrsa.pub
             },
             "points" : {
                 "attack" : 2,

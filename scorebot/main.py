@@ -56,7 +56,12 @@ def put_flag(host, servicename, flag):
     service = services[ servicename ]
     ssh = SSHClient()
     ssh.load_system_host_keys()
-    ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
+
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    key = paramiko.RSAKey.from_private_key_file(host['sshkeypath'])
+    ssh.connect(host['ipaddress'], username='edwards', pkey = key)
+
+    # ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
     stdin, stdout, stderr = ssh.exec_command("echo -n {} > {}".format(flag, service['flagpath']))
     """
     with SCPClient(ssh.get_transport()) as scp:
@@ -67,7 +72,12 @@ def get_flag(host, servicename, flag):
     service = services[ servicename ]
     ssh = SSHClient()
     ssh.load_system_host_keys()
-    ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
+
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    key = paramiko.RSAKey.from_private_key_file(host['sshkeypath'])
+    ssh.connect(host['ipaddress'], username='edwards', pkey = key)
+
+    # ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
     stdin, stdout, stderr = ssh.exec_command("cat {}".format(service['flagpath']))
     flag = stdout.readlines()
     return flag
@@ -201,8 +211,9 @@ if __name__ == '__main__':
                 "name": teamname,
                 "host": {
                     "ipaddress": input("IP-Address: ").strip(),
-                    "username": input("SSH-User: ").lower().strip(),
-                    "password": getpass("SSH-Password: ").strip()
+                    "sshkeypath": input("SSH-Key: ").lower().strip(),
+                    # "username": input("SSH-User: ").lower().strip(),
+                    # "password": getpass("SSH-Password: ").strip()
                 },
                 "points": {
                     "attack": 0,
