@@ -6,9 +6,6 @@ import time, sys, bcrypt, timeout_decorator, threading
 
 from pwn import remote
 
-from paramiko import SSHClient
-# from scp import SCPClient
-
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
@@ -52,36 +49,6 @@ def gameinfo():
     return Response(json.dumps(current_game, cls=JSONEncoder), status=200, mimetype='application/json')
 """
 
-def put_flag(host, servicename, flag):
-    service = services[ servicename ]
-    ssh = SSHClient()
-    ssh.load_system_host_keys()
-
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    key = paramiko.RSAKey.from_private_key_file(host['sshkeypath'])
-    ssh.connect(host['ipaddress'], username='edwards', pkey = key)
-
-    # ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
-    stdin, stdout, stderr = ssh.exec_command("echo -n {} > {}".format(flag, service['flagpath']))
-    """
-    with SCPClient(ssh.get_transport()) as scp:
-        scp.put('flag.txt', 'toserver.txt')
-    """
-
-def get_flag(host, servicename, flag):
-    service = services[ servicename ]
-    ssh = SSHClient()
-    ssh.load_system_host_keys()
-
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    key = paramiko.RSAKey.from_private_key_file(host['sshkeypath'])
-    ssh.connect(host['ipaddress'], username='edwards', pkey = key)
-
-    # ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
-    stdin, stdout, stderr = ssh.exec_command("cat {}".format(service['flagpath']))
-    flag = stdout.readlines()
-    return flag
-
 # Exception raise after timeout
 @timeout_decorator.timeout(30, use_signals=False)
 def service_is_up( host, service ):
@@ -98,7 +65,7 @@ def service_is_up( host, service ):
 def updateflag(team, servicename):
     flag =  "unictf{" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) + '}' # Create the flag
     print("{} {} {}".format(team['host']['ipaddress'], servicename, flag))
-    put_flag(team['host'], servicename, flag) # Write flag to file
+    utils.put_flag(team['host'], services[ servicename ], flag) # Write flag to file
     mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
         "flags.{}.{}".format(team['name'], servicename) : {
             "flag": bcrypt.hashpw(flag.encode('utf-8'), SALT) ,
@@ -125,7 +92,7 @@ def update_defense_point(game, teamname, servicename):
     if game['flags'][ teamname ][ servicename ]['stoled'] is False:
         try:
             if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
-                if safe_str_cmp ( get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
+                if safe_str_cmp ( utils.get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
                     # Save to database
                     mongodb.ctfgame.update_one({
                         "_id": current_game['_id'],
