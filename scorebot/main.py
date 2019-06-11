@@ -19,8 +19,8 @@ from getpass import getpass
 
 from utils import *
 
-from servicesup import ServiceUP
-servicesup = ServiceUP().servicesup
+from servicesup import ServicesUP
+servicesup = ServicesUP().servicesup
 
 app = Flask(__name__)
 CORS(app)
