@@ -63,7 +63,7 @@ def service_is_up( host, servicename ):
 def updateflag(team, servicename):
     flag =  "unictf{" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) + '}' # Create the flag
     # print("{} {} {}".format(team['host']['ipaddress'], servicename, flag))
-    utils.put_flag(team['host'], services[ servicename ], flag) # Write flag to file
+    utils.put_flag(team["host"], services[ servicename ], flag) # Write flag to file
     mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
         "flags.{}.{}".format(team['name'], servicename) : {
             "flag": bcrypt.hashpw(flag.encode('utf-8'), SALT) ,
@@ -90,7 +90,7 @@ def update_defense_point(game, teamname, servicename):
     if game['flags'][ teamname ][ servicename ]['stoled'] is False:
         #try:
             if service_is_up( team['host']['ipaddress'], servicename ) is True: # Check if service is up
-                if safe_str_cmp ( utils.get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
+                if safe_str_cmp ( utils.get_flag( team['host'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
                     # Save to database
                     mongodb.ctfgame.update_one({
                         "_id": current_game['_id'],
@@ -98,11 +98,11 @@ def update_defense_point(game, teamname, servicename):
                     },
                         { "$inc": { "teams.$.points.defense": 1 } }
                     )
-                    utils.append_to_history(dbmongo, current_game['_id'], "{} , {} DEFENSE +1!".format( teamname.title(), servicename ) )
+                    utils.append_to_history(mongodb, current_game['_id'], "{} , {} DEFENSE +1!".format( teamname.title(), servicename ) )
                 else:
-                    utils.append_to_history(dbmongo, current_game['_id'], "{} , {} FLAG NOT INTEGRITY".format( teamname.title(), servicename ) )
+                    utils.append_to_history(mongodb, current_game['_id'], "{} , {} FLAG NOT INTEGRITY".format( teamname.title(), servicename ) )
             else:
-                utils.append_to_history(dbmongo, current_game['_id'], "{} , {} SERVICE DOWN!".format( teamname.title(), servicename ) )
+                utils.append_to_history(mongodb, current_game['_id'], "{} , {} SERVICE DOWN!".format( teamname.title(), servicename ) )
         #except Exception as e:
         #    logger.error("Exception raised on: {}".format(e))
 
@@ -156,13 +156,13 @@ def submitflag():
                     },
                     { "$set": { "flags.{}.{}.stoled".format( team_defense['name'], servicename ): True, } }
                 )
-                utils.append_to_history(dbmongo, current_game['_id'], "{} submit a VALID flag! ATTACK +2".format( team_attack['name'].title() ) )
+                utils.append_to_history(mongodb, current_game['_id'], "{} submit a VALID flag! ATTACK +2".format( team_attack['name'].title() ) )
                 return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "valid"}), status=200, mimetype='application/json')
             else:
-                utils.append_to_history(dbmongo, current_game['_id'], "{} submit a WRONG flag!".format( team_attack['name'].title() ) )
+                utils.append_to_history(mongodb, current_game['_id'], "{} submit a WRONG flag!".format( team_attack['name'].title() ) )
                 return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "wrong"}), status=400, mimetype='application/json')
         else:
-            utils.append_to_history(dbmongo, current_game['_id'], "{} submit a EXPIRED flag!".format( team_attack['name'].title() ) )
+            utils.append_to_history(mongodb, current_game['_id'], "{} submit a EXPIRED flag!".format( team_attack['name'].title() ) )
             return Response(json.dumps( {"flag": flag_stoled, "servicename": servicename, "status": "expired"}), status=400, mimetype='application/json')
     except Exception as e:
         logger.error("Exception raised with the following args: {}. Exception: {}".format(json_data, e))
@@ -188,8 +188,8 @@ if __name__ == '__main__':
                 "host": {
                     "ipaddress": input("IP-Address: ").strip(),
                     # "sshkeypath": input("SSH-Key: ").lower().strip(), # Load from system
-                    # "username": input("SSH-User: ").lower().strip(),  # RSA Key
-                    # "password": getpass("SSH-Password: ").strip()
+                    "username": input("SSH-User: ").lower().strip(),
+                    # "password": getpass("SSH-Password: ").strip() # RSA Key
                 },
                 "points": {
                     "attack": 0,
