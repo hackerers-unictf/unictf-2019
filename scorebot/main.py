@@ -9,7 +9,7 @@ from pwn import remote
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
-from flask import Flask, request, Response
+from flask import Flask, request, Response, render_template
 from flask_cors import CORS
 
 from joblib import Parallel, delayed
@@ -20,7 +20,7 @@ from getpass import getpass
 from servicesup import ServicesUP
 servicesup = ServicesUP().servicesup
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates', static_folder="static")
 CORS(app)
 
 app.url_map.strict_slashes = False
@@ -62,7 +62,6 @@ def service_is_up( host, servicename ):
 
 def updateflag(team, servicename):
     flag =  "unictf{" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) + '}' # Create the flag
-    # print("{} {} {}".format(team['host']['ipaddress'], servicename, flag))
     utils.put_flag(team['host'], services[ servicename ], flag) # Write flag to file
     mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
         "flags.{}.{}".format(team['name'], servicename) : {
@@ -111,6 +110,12 @@ def defensepoint():
     for teamname in game['flags']:
         team = utils.get_team_byname(current_game['teams'], teamname)
         Parallel(n_jobs=4, backend="threading")(delayed(update_defense_point)(game, teamname, servicename) for servicename in game['flags'][ teamname ])
+
+@app.route("/", methods=['GET'])
+def hello():
+    game = mongodb.ctfgame.find_one({"_id": current_game['_id']} )
+    game['history'] = game['history'][:5]
+    return render_template('index.html', game=game)
 
 @app.route('/submitflag', methods=['POST'])
 def submitflag():

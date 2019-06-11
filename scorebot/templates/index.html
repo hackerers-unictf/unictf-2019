@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>{{ game.name }}</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/termynal.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono">
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background: #1a1e24;
+            width: 100%;
+            min-height: 100vh;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
+            justify-content: center;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div style="flex-direction: row;">
+        <div>
+            {% for team in game.teams %}
+            <div id="termynal" data-termynal style="margin-bottom: 10px;">
+                <span data-ty="input">{{ team.name }} ( {{ team.host.ipaddress }} ) </span>
+                <span>ATTACK POINTS : {{ team.points.attack }}</span>
+                <span>ATTACK DEFENSE :{{ team.points.defense }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="termynal" data-termynal>
+            {% for history in game.history %}
+            <span data-ty="input">{{ history }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/termynal.js') }}" data-termynal-container="#termynal"></script>
+</body>
