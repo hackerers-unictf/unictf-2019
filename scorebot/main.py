@@ -19,6 +19,9 @@ from getpass import getpass
 
 from utils import *
 
+from servicesup import ServiceUP
+servicesup = ServiceUP().servicesup
+
 app = Flask(__name__)
 CORS(app)
 
@@ -51,20 +54,17 @@ def gameinfo():
 
 # Exception raise after timeout
 @timeout_decorator.timeout(30, use_signals=False)
-def service_is_up( host, service ):
+def service_is_up( host, servicename ):
     try:
-        connection = remote(host, service['port'])
-        connection.recvline()
-        connection.close()
-        return True
+        return servicesup[ services[ servicename ] ] ( host , services[ servicename ]['port'] )
     except Exception as e:
-        logger.error("Error with service: {}:{} : {}".format(host, service['port'], e))
+        logger.error("Error with service: {}:{} : {}".format(host, services[ servicename ]['port'], e))
         return False
     return False
 
 def updateflag(team, servicename):
     flag =  "unictf{" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) + '}' # Create the flag
-    print("{} {} {}".format(team['host']['ipaddress'], servicename, flag))
+    # print("{} {} {}".format(team['host']['ipaddress'], servicename, flag))
     utils.put_flag(team['host'], services[ servicename ], flag) # Write flag to file
     mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
         "flags.{}.{}".format(team['name'], servicename) : {

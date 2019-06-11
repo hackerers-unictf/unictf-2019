@@ -107,3 +107,4 @@ venv.bak/
 
 # Custom files
 services.json
+servicesup.py
