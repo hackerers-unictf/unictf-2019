@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os, json, random, logging, datetime
+import os, json, random, logging, datetime, utils
 import time, sys, bcrypt, timeout_decorator, threading
 
 from pwn import remote
@@ -16,8 +16,6 @@ from joblib import Parallel, delayed
 
 from pprint import pprint
 from getpass import getpass
-
-from utils import *
 
 from servicesup import ServicesUP
 servicesup = ServicesUP().servicesup
@@ -56,7 +54,7 @@ def gameinfo():
 @timeout_decorator.timeout(30, use_signals=False)
 def service_is_up( host, servicename ):
     try:
-        return servicesup[ services[ servicename ] ] ( host , services[ servicename ]['port'] )
+        return servicesup[ servicename ] ( host , services[ servicename ]['port'] )
     except Exception as e:
         logger.error("Error with service: {}:{} : {}".format(host, services[ servicename ]['port'], e))
         return False
@@ -90,8 +88,8 @@ def renew_flags():
 def update_defense_point(game, teamname, servicename):
     team = utils.get_team_byname(game['teams'], teamname)
     if game['flags'][ teamname ][ servicename ]['stoled'] is False:
-        try:
-            if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
+        #try:
+            if service_is_up( team['host']['ipaddress'], servicename ) is True: # Check if service is up
                 if safe_str_cmp ( utils.get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
                     # Save to database
                     mongodb.ctfgame.update_one({
@@ -105,8 +103,8 @@ def update_defense_point(game, teamname, servicename):
                     utils.append_to_history(dbmongo, current_game['_id'], "{} , {} FLAG NOT INTEGRITY".format( teamname.title(), servicename ) )
             else:
                 utils.append_to_history(dbmongo, current_game['_id'], "{} , {} SERVICE DOWN!".format( teamname.title(), servicename ) )
-        except Exception as e:
-            logger.error("Exception raised on: {}".format(e))
+        #except Exception as e:
+        #    logger.error("Exception raised on: {}".format(e))
 
 def defensepoint():
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1, "teams": 1} )
@@ -189,8 +187,8 @@ if __name__ == '__main__':
                 "name": teamname,
                 "host": {
                     "ipaddress": input("IP-Address: ").strip(),
-                    "sshkeypath": input("SSH-Key: ").lower().strip(),
-                    # "username": input("SSH-User: ").lower().strip(),
+                    # "sshkeypath": input("SSH-Key: ").lower().strip(), # Load from system
+                    # "username": input("SSH-User: ").lower().strip(),  # RSA Key
                     # "password": getpass("SSH-Password: ").strip()
                 },
                 "points": {
