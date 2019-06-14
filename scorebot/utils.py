@@ -1,14 +1,13 @@
-from datetime import datetime
-from paramiko import SSHClient
+import datetime, paramiko
 # from scp import SCPClient
 
-def put_flag(host, service, flag):
-    ssh = SSHClient()
-    ssh.load_system_host_keys()
+# USERNAME OF SSH MACHINE SHOULD BE AS ARGS OR IN SETTINGS FILE. TODO
 
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    key = paramiko.RSAKey.from_private_key_file(host['sshkeypath'])
-    ssh.connect(host['ipaddress'], username='edwards', pkey = key)
+def put_flag(host, service, flag):
+    ssh = paramiko.SSHClient()
+    ssh.load_system_host_keys() # Save my life
+
+    ssh.connect(host['ipaddress'], username='unictf')
 
     # ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
     stdin, stdout, stderr = ssh.exec_command("echo -n {} > {}".format(flag, service['flagpath']))
@@ -17,13 +16,11 @@ def put_flag(host, service, flag):
         scp.put('flag.txt', 'toserver.txt')
     """
 
-def get_flag(host, service, flag):
-    ssh = SSHClient()
+def get_flag(host, service):
+    ssh = paramiko.SSHClient()
     ssh.load_system_host_keys()
-
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    key = paramiko.RSAKey.from_private_key_file(host['sshkeypath'])
-    ssh.connect(host['ipaddress'], username='edwards', pkey = key)
+    print(host)
+    ssh.connect(host['ipaddress'], username='unictf')
 
     # ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
     stdin, stdout, stderr = ssh.exec_command("cat {}".format(service['flagpath']))
@@ -46,5 +43,5 @@ def append_to_history(mongodb, _id, message):
     mongodb.ctfgame.update_one({
         "_id": _id,
     },
-        { "$push": { "history": "{} - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")  , message) } }
+        { "$push": { "history": "{} - {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  , message) } }
     )

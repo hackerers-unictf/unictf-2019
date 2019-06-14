@@ -17,6 +17,19 @@
 - **CONFIG** Copy _services.json.dist_ to _services.json_ and populate it. It is a simple json where the key is the name of the service (lowercase) with the attribute _port_ and _flagpath_ (absolute)
 - All the services must be up and usable for get a defense point. Each service need to have a **is_up** method that return **True** or **False**
 
+Copy _servicesup.py.dist_ to _servicesup.py_. Create a method for each service. The method name must be in lower case and must be the same in _service.json_. It's imporant that the method return True or False and have as argument host and port.
+```python
+def serviceone(host, port):
+    r = remote(host, port)
+    res = r.readuntil('user:')
+    # do other stuff ...
+    res = filter(lambda x: 'read?' in x, res)
+    r.close()
+    if res:
+	     return True
+    return False
+```
+
 ## rules
 - Team A cannot send the flag of Team A (same team)
 - For gain defense point the service must be **UP, USABLE** and the flag must be **INTEGRY**
@@ -49,7 +62,7 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
             "name" : "team1-power", /** Lower case suggested for team name**/
             "host" : {
                 "ipaddress" : "192.168.x.x",
-                "sshkeypath": "../../idrsa.pub
+                "sshkeypath": "../../idrsa.pub"
             },
             "points" : {
                 "attack" : 10,
@@ -60,7 +73,7 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
             "name" : "team2-strong",
             "host" : {
                 "ipaddress" : "192.168.x.x",
-                "sshkeypath": "../../idrsa.pub
+                "sshkeypath": "../../idrsa.pub"
             },
             "points" : {
                 "attack" : 2,

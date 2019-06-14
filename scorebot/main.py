@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os, json, random, logging, datetime
+import os, json, random, logging, datetime, utils
 import time, sys, bcrypt, timeout_decorator, threading
 
 from pwn import remote
@@ -9,7 +9,7 @@ from pwn import remote
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
-from flask import Flask, request, Response
+from flask import Flask, request, Response, render_template
 from flask_cors import CORS
 
 from joblib import Parallel, delayed
@@ -17,9 +17,10 @@ from joblib import Parallel, delayed
 from pprint import pprint
 from getpass import getpass
 
-from utils import *
+from servicesup import ServicesUP
+servicesup = ServicesUP().servicesup
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates', static_folder="static")
 CORS(app)
 
 app.url_map.strict_slashes = False
@@ -51,20 +52,16 @@ def gameinfo():
 
 # Exception raise after timeout
 @timeout_decorator.timeout(30, use_signals=False)
-def service_is_up( host, service ):
+def service_is_up( host, servicename ):
     try:
-        connection = remote(host, service['port'])
-        connection.recvline()
-        connection.close()
-        return True
+        return servicesup[ servicename ] ( host , services[ servicename ]['port'] )
     except Exception as e:
-        logger.error("Error with service: {}:{} : {}".format(host, service['port'], e))
+        logger.error("Error with service: {}:{} : {}".format(host, services[ servicename ]['port'], e))
         return False
     return False
 
 def updateflag(team, servicename):
     flag =  "unictf{" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) + '}' # Create the flag
-    print("{} {} {}".format(team['host']['ipaddress'], servicename, flag))
     utils.put_flag(team['host'], services[ servicename ], flag) # Write flag to file
     mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
         "flags.{}.{}".format(team['name'], servicename) : {
@@ -90,8 +87,8 @@ def renew_flags():
 def update_defense_point(game, teamname, servicename):
     team = utils.get_team_byname(game['teams'], teamname)
     if game['flags'][ teamname ][ servicename ]['stoled'] is False:
-        try:
-            if service_is_up( team['host']['ipaddress'], services[ servicename ] ) is True: # Check if service is up
+        #try:
+            if service_is_up( team['host']['ipaddress'], servicename ) is True: # Check if service is up
                 if safe_str_cmp ( utils.get_flag( team['host']['ipaddress'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
                     # Save to database
                     mongodb.ctfgame.update_one({
@@ -105,14 +102,20 @@ def update_defense_point(game, teamname, servicename):
                     utils.append_to_history(dbmongo, current_game['_id'], "{} , {} FLAG NOT INTEGRITY".format( teamname.title(), servicename ) )
             else:
                 utils.append_to_history(dbmongo, current_game['_id'], "{} , {} SERVICE DOWN!".format( teamname.title(), servicename ) )
-        except Exception as e:
-            logger.error("Exception raised on: {}".format(e))
+        #except Exception as e:
+        #    logger.error("Exception raised on: {}".format(e))
 
 def defensepoint():
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, {"flags": 1, "teams": 1} )
     for teamname in game['flags']:
         team = utils.get_team_byname(current_game['teams'], teamname)
         Parallel(n_jobs=4, backend="threading")(delayed(update_defense_point)(game, teamname, servicename) for servicename in game['flags'][ teamname ])
+
+@app.route("/", methods=['GET'])
+def hello():
+    game = mongodb.ctfgame.find_one({"_id": current_game['_id']} )
+    game['history'] = game['history'][:5]
+    return render_template('index.html', game=game)
 
 @app.route('/submitflag', methods=['POST'])
 def submitflag():
@@ -189,8 +192,8 @@ if __name__ == '__main__':
                 "name": teamname,
                 "host": {
                     "ipaddress": input("IP-Address: ").strip(),
-                    "sshkeypath": input("SSH-Key: ").lower().strip(),
-                    # "username": input("SSH-User: ").lower().strip(),
+                    # "sshkeypath": input("SSH-Key: ").lower().strip(), # Load from system
+                    # "username": input("SSH-User: ").lower().strip(),  # RSA Key
                     # "password": getpass("SSH-Password: ").strip()
                 },
                 "points": {
