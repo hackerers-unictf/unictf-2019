@@ -59,10 +59,11 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
     "_id" : ObjectId("5cebfd9....7945d6d1"),
     "teams" : [
         {
-            "name" : "team1-power", /** Lower case suggested for team name**/
+            "name" : "team1-power", /** Lower case suggested for team name **/
             "host" : {
-                "ipaddress" : "192.168.x.x",
-                "sshkeypath": "../../idrsa.pub"
+                "ipaddress_32bit" : "192.168.x.x",
+                "ipaddress_64bit" : "192.168.x.x",
+                "username": "scorebot_ctf_user" /** Example **/
             },
             "points" : {
                 "attack" : 10,
@@ -72,8 +73,9 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
         {
             "name" : "team2-strong",
             "host" : {
-                "ipaddress" : "192.168.x.x",
-                "sshkeypath": "../../idrsa.pub"
+                "ipaddress_32bit" : "192.168.x.x",
+                "ipaddress_64bit" : "192.168.x.x",
+                "username": "scorebot_ctf_user" /** Example **/
             },
             "points" : {
                 "attack" : 2,
