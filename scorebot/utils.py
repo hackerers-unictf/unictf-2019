@@ -7,7 +7,7 @@ def put_flag(host, service, flag):
     ssh = paramiko.SSHClient()
     ssh.load_system_host_keys() # Save my life
 
-    ssh.connect(host['ipaddress'], username='unictf')
+    ssh.connect(host['ipaddress'], username=host["username"])
 
     # ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
     stdin, stdout, stderr = ssh.exec_command("echo -n {} > {}".format(flag, service['flagpath']))
@@ -19,12 +19,11 @@ def put_flag(host, service, flag):
 def get_flag(host, service):
     ssh = paramiko.SSHClient()
     ssh.load_system_host_keys()
-    print(host)
-    ssh.connect(host['ipaddress'], username='unictf')
+    ssh.connect(host['ipaddress'], username=host["username"])
 
     # ssh.connect(host['ipaddress'], username=host['username'], password=host['password'])
     stdin, stdout, stderr = ssh.exec_command("cat {}".format(service['flagpath']))
-    flag = stdout.readlines()
+    flag = stdout.readline()
     return flag
 
 def get_team_byname(teams, name):
