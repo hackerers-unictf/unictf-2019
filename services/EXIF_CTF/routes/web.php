@@ -12,7 +12,6 @@
 */
 
 
-Auth::routes();
 
 Route::get('/', 'HomeController@index')->name('home');
 Route::post('/','HomeController@show')->name('home.show');
