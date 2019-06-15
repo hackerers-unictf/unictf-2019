@@ -4,7 +4,7 @@ def put_flag(host, service, flag):
     ssh = paramiko.SSHClient()
     ssh.load_system_host_keys() # Save my life
 
-    ssh.connect(host[ 'ipaddress_{}bit'.format(host['arch']) ], username=host['username'])
+    ssh.connect(host[ 'ipaddress_{}bit'.format(service['arch']) ], username=host['username'])
 
     stdin, stdout, stderr = ssh.exec_command("echo -n {} > {}".format(flag, service['flagpath']))
 
@@ -12,7 +12,7 @@ def get_flag(host, service):
     ssh = paramiko.SSHClient()
     ssh.load_system_host_keys()
 
-    ssh.connect(host[ 'ipaddress_{}bit'.format(host['arch']) ], username=host['username'])
+    ssh.connect(host[ 'ipaddress_{}bit'.format(service['arch']) ], username=host['username'])
 
     stdin, stdout, stderr = ssh.exec_command("cat {}".format(service['flagpath']))
     flag = stdout.readline()
