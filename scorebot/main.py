@@ -119,8 +119,8 @@ def defensepoint():
 @app.route("/", methods=['GET'])
 def hello():
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, { "flags": 0 } )
-    game['history'].reverse()
-    game['history'] = game['history'][:50]
+    # game['history'].reverse()
+    # game['history'] = game['history'][:50]
     return render_template('index.html', game=game)
 
 @app.route('/submitflag', methods=['GET', 'POST'])
