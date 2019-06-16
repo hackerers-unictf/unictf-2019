@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>{{ game.name }}</title>
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/termynal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/submit.css') }}">
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background: #1a1e24;
+            width: 100%;
+            min-height: 100vh;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: center;
+            align-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="termynal" data-termynal style="margin-right: 25px; width: 500px; font-size: 20px;">
+        <div class="submit-form">
+            <form method="post" action="./submitflag">
+                <div class="illustration"><i class="icon ion-ios-locked-outline"></i></div>
+                <div class="form-group">
+                    <select required class="form-control" name="teamname">
+                        {% for team in game.teams %}
+                        <option value="{{ team.name }}">{{ team.name.title() }}</option>
+                        {% endfor %}
+                    </select>
+                    <input required class="form-control" type="text" placeholder="Stoled from: IP-ADDRESS"
+                        name='stoledfrom'>
+                    <select required class="form-control" name="servicename">
+                        {% for service in services %}
+                        <option value="{{ service }}">{{ service.title() }}</option>
+                        {% endfor %}
+                    </select>
+                    <input required class="form-control" type="text" placeholder="unictf{flag}" name='flag'>
+                </div>
+                <div class="form-group"><button class="btn btn-primary btn-block" type="submit">SUBMIT</button></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/termynal.js') }}" data-termynal-container="#termynal"></script>
+</body>
