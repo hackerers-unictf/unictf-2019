@@ -56,20 +56,23 @@ def service_is_up( host, servicename ):
     try:
         return servicesup[ servicename ] ( host , services[ servicename ]['port'] )
     except Exception as e:
-        logger.error("Error with service: {}:{} : {}".format(host, services[ servicename ]['port'], e))
+        logger.error("Error with service: {}:{} ({}) : {}".format(host, services[ servicename ]['port'], servicename, e))
         return False
     return False
 
 def updateflag(team, servicename):
-    flag =  "unictf{" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) + '}' # Create the flag
-    utils.put_flag(team['host'], services[ servicename ], flag) # Write flag to file
-    mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
-        "flags.{}.{}".format(team['name'], servicename) : {
-            "flag": bcrypt.hashpw(flag.encode('utf-8'), SALT) ,
-            "stoled": False,
-            "generate_at": datetime.datetime.now()
-        }
-    } })
+    try:
+        flag =  "unictf{" + ''.join([random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') for i in range(50)]) + '}' # Create the flag
+        utils.put_flag(team['host'], services[ servicename ], flag) # Write flag to file
+        mongodb.ctfgame.update_one({ "_id": current_game['_id'] }, { "$set": {
+            "flags.{}.{}".format(team['name'], servicename) : {
+                "flag": bcrypt.hashpw(flag.encode('utf-8'), SALT) ,
+                "stoled": False,
+                "generate_at": datetime.datetime.now()
+            }
+        } })
+    except Exception as e:
+        logger.error("Error with service: {} : {}".format(team['host'] , servicename, e))
 
 def safe_str_cmp(flag, hashed):
     return bcrypt.hashpw(flag.encode('utf-8'), SALT) == hashed
@@ -89,7 +92,9 @@ def update_defense_point(game, teamname, servicename):
     if game['flags'][ teamname ][ servicename ]['stoled'] is False:
         try:
             if service_is_up( team['host'][ 'ipaddress_{}bit'.format( services[servicename]['arch'] ) ], servicename ) is True: # Check if service is up
-                if safe_str_cmp ( utils.get_flag( team['host'], services[ servicename ] ), game['flags'][ teamname ][ servicename ]['flag'] ) is True: # Check if flag is integry
+                db_flag = game['flags'][ teamname ][ servicename ]['flag']
+                catted_flag = utils.get_flag( team['host'], services[ servicename ] )
+                if safe_str_cmp ( catted_flag , db_flag ) is True: # Check if flag is integry
                     # Save to database
                     mongodb.ctfgame.update_one({
                         "_id": current_game['_id'],
@@ -114,7 +119,8 @@ def defensepoint():
 @app.route("/", methods=['GET'])
 def hello():
     game = mongodb.ctfgame.find_one({"_id": current_game['_id']}, { "flags": 0 } )
-    game['history'] = game['history'][:10]
+    game['history'].reverse()
+    game['history'] = game['history'][:50]
     return render_template('index.html', game=game)
 
 @app.route('/submitflag', methods=['GET', 'POST'])
@@ -136,7 +142,7 @@ def submitflag():
             servicename = json_data['servicename'].lower()
             stoled_from = json_data['stoledfrom'].lower()
 
-            team_attack = utils.get_team_byaddress(current_game['teams'], teamname)
+            team_attack = utils.get_team_byname(current_game['teams'], teamname)
             if team_attack is None:
                 return Response(json.dumps( {"message": "{} team not found/valid".format(teamname)}), status=400, mimetype='application/json')
 
