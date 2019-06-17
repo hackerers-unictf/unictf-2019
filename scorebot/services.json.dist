@@ -1,25 +1,17 @@
 {
     "service_name1": {
         "port": 1234,
-        "flagpath": "/home/../../flag.txt"
+        "flagpath": "/home/../../flag.txt",
+        "arch": "32"
     },
     "service_name2": {
         "port": 5678,
-        "flagpath": "/home/../../flag.txt"
+        "flagpath": "/home/../../flag.txt",
+        "arch": "32"
     },
     "service_name3": {
         "port": 1111,
-        "flagpath": "/home/../../flag.txt"
+        "flagpath": "/home/../../flag.txt",
+        "arch": "64"
     }
-    "arinzaarunzal0": {
-	"port": 18321,
-	"flagpath": "/home/scorebot/arinzaarunzal0/arinzaadm"
-    }
-    "unictf_graded_list": {
-	"port": 38960,
-	"flagpath": "/home/scorebot/graded_list/Hawk"
-    }
-    "smartowen4755": {
-	"port": 12397,
-	"flagpath": "/home/scorebot/smartowen4755/Hawk"
 }
