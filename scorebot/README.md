@@ -10,8 +10,8 @@
 1) Create virtualenv: `virtualenv -p python3 env`
 2) Activate the env: `source env/bin/activate`
 3) Install all requirements:
-   - `pip install -r requirements.txt`
    - `pip install git+https://github.com/arthaud/python3-pwntools.git`
+   - `pip install -r requirements.txt`
 
 ## services
 - **CONFIG** Copy _services.json.dist_ to _services.json_ and populate it. It is a simple json where the key is the name of the service (lowercase) with the attribute _port_ and _flagpath_ (absolute)
