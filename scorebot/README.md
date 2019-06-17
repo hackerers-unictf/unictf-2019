@@ -115,3 +115,7 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
     }
 }
 ```
+
+## screen
+![Scorebot](/img/scoreboard.png)
+![Submitflag](/img/submitflag.jpg)
