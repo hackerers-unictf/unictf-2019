@@ -1,0 +1,1 @@
+socat TCP-LISTEN:10002,reuseaddr,backlog,fork SYSTEM:./arinzaarunzal0
