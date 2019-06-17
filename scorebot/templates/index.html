@@ -4,8 +4,8 @@
 <head>
     <title>{{ game.name }}</title>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/termynal.css') }}">
     <link href="https://fonts.googleapis.com/css?family=Fira+Mono">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/termynal.css') }}">
     <style>
         body {
             padding: 0;
@@ -15,37 +15,93 @@
             min-height: 100vh;
             display: -webkit-box;
             display: -ms-flexbox;
-            display: flex;
             -webkit-box-align: center;
             -ms-flex-align: center;
-            align-items: center;
             -webkit-box-pack: center;
             -ms-flex-pack: center;
-            justify-content: center;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: center;
+            align-content: center;
+        }
+
+        .globalbox {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+        }
+
+        .teamsbox {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
     </style>
+<style type="text/css">
+::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+::-webkit-scrollbar-button {
+  width: 0px;
+  height: 0px;
+}
+::-webkit-scrollbar-thumb {
+  background: #e1e1e1;
+  border: 0px none #ffffff;
+  border-radius: 50px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff;
+}
+::-webkit-scrollbar-thumb:active {
+  background: #000000;
+}
+::-webkit-scrollbar-track {
+  background: #666666;
+  border: 0px none #ffffff;
+  border-radius: 50px;
+}
+::-webkit-scrollbar-track:hover {
+  background: #666666;
+}
+::-webkit-scrollbar-track:active {
+  background: #333333;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+</style>
 </head>
 
 <body>
 
-    <div style="flex-direction: row;">
-        <div>
+    <div class="globalbox">
+        <div class="teamsbox">
             {% for team in game.teams %}
-            <div id="termynal" data-termynal style="margin-bottom: 10px;">
-                <span data-ty="input">{{ team.name }} ( {{ team.host.ipaddress }} ) </span>
-                <span>ATTACK POINTS : {{ team.points.attack }}</span>
-                <span>ATTACK DEFENSE :{{ team.points.defense }}</span>
+            <div id="termynal" data-termynal style="margin-right: 25px; width: 500px; font-size: 20px;">
+                <span data-ty="input">{{ team.name }}</span>
+                <span>ATTACK POINTS : {{ team.points.attack }} <br> ATTACK DEFENSE : {{ team.points.defense }} </span>
             </div>
             {% endfor %}
         </div>
-        <div id="termynal" data-termynal>
+        <div id="termynal" data-termynal style="padding-right: 5px;">
+	    <div style="overflow-y: auto; overflow-x: hidden; max-height: 500px;" id="history">
             {% for history in game.history %}
             <span data-ty="input">{{ history }}</span>
             {% endfor %}
+            </div>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/termynal.js') }}" data-termynal-container="#termynal"></script>
+    <script src="{{ url_for('static', filename='js/termynal.min.js') }}" data-termynal-container="#termynal"></script>
+    <script>
+      var elem = document.getElementById('history');
+      elem.scrollTop = elem.scrollHeight;
+    </script>
 </body>

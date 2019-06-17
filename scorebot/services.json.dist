@@ -11,4 +11,15 @@
         "port": 1111,
         "flagpath": "/home/../../flag.txt"
     }
+    "arinzaarunzal0": {
+	"port": 18321,
+	"flagpath": "/home/scorebot/arinzaarunzal0/arinzaadm"
+    }
+    "unictf_graded_list": {
+	"port": 38960,
+	"flagpath": "/home/scorebot/graded_list/Hawk"
+    }
+    "smartowen4755": {
+	"port": 12397,
+	"flagpath": "/home/scorebot/smartowen4755/Hawk"
 }
