@@ -46,8 +46,8 @@
                         <option value="{{ team.name }}">{{ team.name.title() }}</option>
                         {% endfor %}
                     </select>
-                    <input required class="form-control" type="text" placeholder="Stoled from: IP-ADDRESS"
-                        name='stoledfrom'>
+                    <input required class="form-control" type="text" placeholder="stole from: IP-ADDRESS"
+                        name='stolefrom'>
                     <select required class="form-control" name="servicename">
                         {% for service in services %}
                         <option value="{{ service }}">{{ service.title() }}</option>

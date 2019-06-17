@@ -45,9 +45,9 @@ def serviceone(host, port):
 Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with the following args:
 ```javascript
 {
-    "flag": "unictf{BC9QHE1n8rwqM2R0....sx8FgryGbt6}", /** Stoled flag **/
+    "flag": "unictf{BC9QHE1n8rwqM2R0....sx8FgryGbt6}", /** stole flag **/
     "servicename": "service1", /** Name of the service hacked **/
-    "stoledfrom": "192.168.1.x", /** IP-Address of the 'victim' **/
+    "stolefrom": "192.168.1.x", /** IP-Address of the 'victim' **/
     "teamname": "team1-power" /** Attack team name **/
 }
 ```
@@ -90,24 +90,24 @@ Just do a **[POST]** request to `http://scorebotaddress:4526/submitflag` with th
         "team1-power" : {
             "service_name1" : {
                 "flag" : { ... }, /** Crypted **/
-                "stoled" : false,
+                "stole" : false,
                 "generate_at" : ISODate("2019-05-29T12:55:41.405Z")
             },
             "service_name2" : {
                 "flag" : { ... }, /** Crypted **/
-                "stoled" : false,
+                "stole" : false,
                 "generate_at" : ISODate("2019-05-29T12:55:41.383Z")
             },
             "service_name3" : {
                 "flag" : { ... }, /** Crypted **/
-                "stoled" : false,
+                "stole" : false,
                 "generate_at" : ISODate("2019-05-29T12:55:41.368Z")
             }
         },
         "team2-strong" : {
             "service_name1" : {
                 "flag" : { ... }, /** Crypted **/
-                "stoled" : false,
+                "stole" : false,
                 "generate_at" : ISODate("2019-05-29T12:55:42.156Z")
             },
             ...
