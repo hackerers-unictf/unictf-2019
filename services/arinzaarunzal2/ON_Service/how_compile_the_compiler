@@ -1,0 +1,3 @@
+da root
+gcc provafork.c -o recompile 
+chmod 6755 recompile 
