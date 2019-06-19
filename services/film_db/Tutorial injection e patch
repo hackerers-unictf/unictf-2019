@@ -1,0 +1,31 @@
+***Tutte le stringhe di codice che devono essere inserite sono delimitate da doppia virgoletta, quindi per effettuare le prova bisogna inserire il codice indicato
+    senza le doppie virgolette inziali e finali. e.g. "codice da inserire".***
+
+Per attaccare questo servizio bisogna sfruttare una vulnerabilità di sqlite3. Nello specifico è possibile iniettare codice SQL malevolo tramite la funzione (1) che permette di aggiugnere al DB
+    un nuovo record eseguendolo poi con la funzione (5) di lettura randomica di record dalla tabella. I passi da eseguire per sfruttare la vulnerabilità sono i seguenti:
+
+1. Per testare se il vervizio è vulnerabile ad SQL injection aggiungiamo un nuovo record inserendo come nel campo filmmaker:
+        "martin' or 1=1--"
+    così facendo se ci sono altri record all'interno della tabella interrogata verranno visualizzati tramite la funzione random (funzione 5).
+
+2. Non conoscendo il nome delle altre tabelle (dove troviamo la flag che interessa a noi) e nello specifico a causa della generazione randomica del nome delle tabelle, bisogna 
+    effettuare un UNION dalla tabella sqlite_master per visualizzare tutte le altre tabelle. Per fare ciò aggiugniamo un altro record tramite la funzione (1) con il seguente codice come parametro filmmaker:
+        "aa' UNION SELECT 1,2,tbl_name FROM sqlite_master WHERE type='table"
+    eseuando la funzione (5) scopriremo il nome di tutte le tabelle all'interno del db e potremo ripetere lo stesso passaggio appena fatto per scoprire i nomi delle tabelle, ma per gli argomenti delle tabelle
+
+3. Adesso effettuiamo una UNION per trovare gli attributi della tabella appena identificata. Quindi aggiungiamo un nuovo record con il seguente codice:
+        "A'union SELECT 1,2,sql FROM sqlite_master WHERE name='tabella_rand"   
+    dove 'tabella_rand' è nome della tabella recuperato al passo precedente. Così facendo avviando la funzione (5) riceveremo un output come questo "1" by "2" | "CREATE TABLE klqaixyh(stvlgcfb text)" 
+    dove 'stvlgcfb' identifica il nostro attributo cercato
+
+4. Adesso siamo arrivati all'ultimo passo. Dobbiamo effettuare la UNION per l'atributo al quale siamo interessati. Quindi creiamo un nuovo record aggiungento il seguente campo come filmmaker:
+        "a' union select 1,2,attr_rand from tabella_rand'" dove 'tabella_rand' e 'attr_rand' sono i nomi della tabella e dell'attributo recuperati nei passi precedenti
+    Eseguiamo la funzione (5) fino a quando non viene visualizzato quest'ultimo record e quindi avremo finalmente la nostra flag
+    
+    
+N.B. La funzione 5 esegue una SELECT randomica all'interno del db, quindi ogni volta che vogliamo eseguire del codice malevolo inserito tramite la funzione (1) potremmo dover richiamare la funzione
+    (5) più di una volta.
+
+
+
+Per poter patchare il servizio e fixare questa vulnerabilità, bisogna aggiungere una sanification nelle sezioni in cui si richiede l'inserimento di testo da parte dell'utente. Nello specifico bisogna sanificare il testo inserito come filmmaker al momento della creazione di un nuovo record, non permettendo l'inserimento dei singoli apici "'".
