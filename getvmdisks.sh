@@ -1,10 +1,10 @@
 #!/bin/bash
-check=0
 if [ -z "$1" ]; then
     echo "Supply virtual disk format (vmdk, vdi or qcow2)"
     echo "Please note that vmdk is for vmware, vdi for virtualbox and qcow2 for kvm-qemu"
     exit 1
 fi
+check=0
 if [ "$1" != "qcow2" ]; then
     check=$(( check + 1 ))
 fi
