@@ -14,7 +14,7 @@ importlib-metadata==0.15
 itsdangerous==1.1.0
 Jinja2==2.10.1
 joblib==0.13.2
-Mako==1.0.10
+Mako==1.2.2
 MarkupSafe==1.1.1
 paramiko==2.4.2
 pluggy==0.12.0
